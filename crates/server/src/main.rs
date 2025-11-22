@@ -1,15 +1,8 @@
 use anyhow::Result;
 use std::time::Duration;
-use tracing::Instrument;
-use tracing::error;
-use tracing::info;
-use tracing::info_span;
-use tracing_subscriber::EnvFilter;
-use tracing_subscriber::filter::LevelFilter;
-use wtransport::Endpoint;
-use wtransport::Identity;
-use wtransport::ServerConfig;
-use wtransport::endpoint::IncomingSession;
+use tracing::{Instrument, error, info, info_span};
+use tracing_subscriber::{EnvFilter, filter::LevelFilter};
+use wtransport::{Endpoint, Identity, ServerConfig, endpoint::IncomingSession};
 
 #[tokio::main]
 async fn main() -> Result<()> {

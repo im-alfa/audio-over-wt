@@ -1,11 +1,10 @@
-use device_query::DeviceQuery;
-use device_query::DeviceState;
-use device_query::Keycode;
+use device_query::{DeviceQuery, DeviceState, Keycode};
 use tokio::sync::mpsc;
-use tracing::level_filters::LevelFilter;
-use tracing::{debug, info};
+use tracing::{debug, info, level_filters::LevelFilter};
 use tracing_subscriber::EnvFilter;
+
 use wtransport::ClientConfig;
+
 use wtransport::Endpoint;
 
 async fn keyboard_input_listener(tx: mpsc::Sender<bool>, ptt_key: Keycode) {
@@ -58,7 +57,7 @@ async fn main() {
         .with_no_cert_validation()
         .build();
 
-    let connection = Endpoint::client(config)
+    let _connection = Endpoint::client(config)
         .unwrap()
         .connect("https://[::1]:4433")
         .await
@@ -96,4 +95,3 @@ async fn main() {
         }
     }
 }
-
