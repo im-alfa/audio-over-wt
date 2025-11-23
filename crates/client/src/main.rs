@@ -2,10 +2,11 @@ use device_query::{DeviceQuery, DeviceState, Keycode};
 use tokio::sync::mpsc;
 use tracing::{debug, info, level_filters::LevelFilter};
 use tracing_subscriber::EnvFilter;
+use wtransport::{ClientConfig, Endpoint};
 
-use wtransport::ClientConfig;
-
-use wtransport::Endpoint;
+mod coder;
+mod constants;
+mod errors;
 
 async fn keyboard_input_listener(tx: mpsc::Sender<bool>, ptt_key: Keycode) {
     let device_state = DeviceState::new();

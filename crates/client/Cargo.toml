@@ -9,4 +9,7 @@ wtransport = { workspace = true, features = ["dangerous-configuration"] }
 device_query = "4.0.1"
 tracing = { workspace = true }
 tracing-subscriber = { workspace = true, features = ["env-filter"] }
-
+audiopus = "0.3.0-rc.0"
+dasp = { version = "0.11.0", features = ["signal", "interpolate", "interpolate-linear"] }
+thiserror = "2.0.17"
+cpal = "0.16.0"
