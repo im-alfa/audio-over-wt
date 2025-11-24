@@ -51,12 +51,20 @@ pub struct AudioBackend {
     recording_thread_cancel_token: Option<CancellationToken>,
 }
 
+impl Drop for AudioBackend {
+    fn drop(&mut self) {
+        if let Some(token) = &self.playback_thread_cancel_token {
+            token.cancel();
+        }
+
+        if let Some(token) = &self.recording_thread_cancel_token {
+            token.cancel();
+        }
+    }
+}
+
 // TODO!: do proper error handling and propagation
 impl AudioBackend {
-    pub fn builder() -> AudioBackendBuilder {
-        AudioBackendBuilder
-    }
-
     pub fn init(
         &mut self,
         rx_recording_signal: mpsc::Receiver<bool>,
