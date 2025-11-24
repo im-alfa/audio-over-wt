@@ -13,3 +13,5 @@ audiopus = "0.3.0-rc.0"
 dasp = { version = "0.11.0", features = ["signal", "interpolate", "interpolate-linear"] }
 thiserror = "2.0.17"
 cpal = "0.16.0"
+tokio-util = { version = "0.7.11" }
+ringbuf = "0.4.1"
