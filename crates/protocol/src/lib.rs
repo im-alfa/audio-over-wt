@@ -4,8 +4,8 @@ pub mod voip {
     include!(concat!(env!("OUT_DIR"), "/voip.rs"));
 }
 
-pub use voip::{AudioPacket, Packet};
 pub use voip::packet::PacketType;
+pub use voip::{AudioPacket, Packet};
 
 impl Packet {
     pub fn to_bytes(&self) -> Result<Vec<u8>, prost::EncodeError> {

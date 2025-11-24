@@ -112,7 +112,6 @@ impl AudioBackend {
         });
     }
 
-
     async fn start_playback_thread(
         cancellation_token: CancellationToken,
         audio_playback_rx: mpsc::Receiver<AudioFrame>,
@@ -126,7 +125,6 @@ impl AudioBackend {
             Err(e) => error!("Error in playback thread: {:?}", e),
         }
     }
-
 
     async fn playback_thread(
         mut audio_playback_rx: mpsc::Receiver<AudioFrame>,

@@ -1,15 +1,19 @@
+use crate::{
+    audio_backend::AudioBackendBuilder,
+    coder::{Decoder, Encoder, OpusDecoder, OpusEncoder},
+    constants::BITRATE,
+};
 use device_query::{DeviceQuery, DeviceState, Keycode};
+use protocol::{AudioPacket, Packet, PacketType};
 use tokio::sync::mpsc;
 use tracing::{debug, info, level_filters::LevelFilter};
 use tracing_subscriber::EnvFilter;
 use wtransport::{ClientConfig, Endpoint};
-use crate::{audio_backend::AudioBackendBuilder, coder::{Encoder, Decoder, OpusDecoder, OpusEncoder}, constants::BITRATE};
-use protocol::{Packet, AudioPacket, PacketType};
 
+mod audio_backend;
 mod coder;
 mod constants;
 mod errors;
-mod audio_backend;
 
 async fn keyboard_input_listener(tx: mpsc::Sender<bool>, ptt_key: Keycode) {
     let device_state = DeviceState::new();

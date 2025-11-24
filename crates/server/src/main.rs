@@ -1,10 +1,10 @@
 use anyhow::Result;
+use protocol::Packet;
 use std::time::Duration;
 use tokio::sync::broadcast;
 use tracing::{Instrument, debug, error, info, info_span};
 use tracing_subscriber::{EnvFilter, filter::LevelFilter};
 use wtransport::{Endpoint, Identity, ServerConfig, endpoint::IncomingSession};
-use protocol::Packet;
 
 type AudioMessage = Vec<u8>;
 
@@ -31,7 +31,7 @@ async fn main() -> Result<()> {
         .build();
 
     let server = Endpoint::server(config)?;
-    
+
     let (tx, _rx) = broadcast::channel::<AudioMessage>(100);
 
     info!("Server ready!");
@@ -42,7 +42,7 @@ async fn main() -> Result<()> {
         let rx = tx.subscribe();
         tokio::spawn(
             handle_connection(id, incoming_session, tx, rx)
-                .instrument(info_span!("Connection", id))
+                .instrument(info_span!("Connection", id)),
         );
     }
 
@@ -56,9 +56,9 @@ async fn handle_connection(
     mut rx: broadcast::Receiver<AudioMessage>,
 ) {
     let result = handle_connection_impl(client_id, incoming_session, tx, &mut rx).await;
-    
+
     info!("Client {} disconnected", client_id);
-    
+
     if let Err(e) = result {
         error!("Connection error: {:?}", e);
     }
@@ -89,11 +89,11 @@ async fn handle_connection_impl(
             dgram = connection.receive_datagram() => {
                 let dgram = dgram?;
                 let payload = dgram.payload();
-                
+
                 match Packet::from_bytes(&payload) {
                     Ok(_packet) => {
                         debug!("Received packet from client {}", client_id);
-                        
+
                         let _ = tx.send(payload.to_vec());
                     }
                     Err(e) => {
