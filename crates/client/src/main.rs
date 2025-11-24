@@ -3,10 +3,13 @@ use tokio::sync::mpsc;
 use tracing::{debug, info, level_filters::LevelFilter};
 use tracing_subscriber::EnvFilter;
 use wtransport::{ClientConfig, Endpoint};
+use crate::{audio_backend::AudioBackendBuilder, coder::{Encoder, Decoder, OpusDecoder, OpusEncoder}, constants::BITRATE};
+use protocol::{Packet, AudioPacket, PacketType};
 
 mod coder;
 mod constants;
 mod errors;
+mod audio_backend;
 
 async fn keyboard_input_listener(tx: mpsc::Sender<bool>, ptt_key: Keycode) {
     let device_state = DeviceState::new();
@@ -58,13 +61,14 @@ async fn main() {
         .with_no_cert_validation()
         .build();
 
-    let _connection = Endpoint::client(config)
+    let connection = Endpoint::client(config)
         .unwrap()
         .connect("https://[::1]:4433")
         .await
         .unwrap();
 
-    let (tx_recording_signal, mut rx_recording_signal) = mpsc::channel::<bool>(20);
+    let (_audio_backend, tx_audio_playback, mut rx_audio_recording, tx_recording_signal) =
+        AudioBackendBuilder::build();
 
     // TODO: move to config
     let ptt_key = Keycode::Delete;
@@ -88,10 +92,91 @@ async fn main() {
         });
     }
 
+    let encoder = OpusEncoder::new(BITRATE).expect("Error creating encoder");
+    // TODO: create a decoder per client
+    let mut decoder = OpusDecoder::new().expect("Error creating decoder");
+
     loop {
         tokio::select! {
-            recvd = rx_recording_signal.recv() => {
-                debug!("Signal Received: {:?}", recvd);
+            datagram = connection.receive_datagram() => {
+                let datagram = match datagram {
+                    Ok(datagram) => datagram,
+                    Err(e) => {
+                        info!("Error receiving datagram: {}. Connection closed", e);
+                        break;
+                    }
+                };
+
+                // try to deserialize the packet
+                let packet = match Packet::from_bytes(&datagram.payload()) {
+                    Ok(packet) => packet,
+                    Err(e) => {
+                        info!("Error deserializing packet: {}", e);
+                        continue;
+                    }
+                };
+
+                // Handle different packet types
+                if let Some(packet_type) = packet.packet_type {
+                    match packet_type {
+                        PacketType::Audio(audio_packet) => {
+                            let decoded_frame = match decoder.decode(audio_packet.frame) {
+                                Ok(frame) => frame,
+                                Err(e) => {
+                                    info!("Error decoding frame: {}", e);
+                                    continue;
+                                }
+                            };
+
+                            match tx_audio_playback.send(decoded_frame).await {
+                                Ok(_) => (),
+                                Err(e) => {
+                                    info!("Error sending frame to playback: {}", e);
+                                    continue;
+                                }
+                            }
+
+                            debug!("playing audio");
+                        }
+                    }
+                } else {
+                    debug!("Received empty packet");
+                }
+            },
+            frame = rx_audio_recording.recv() => {
+                let frame = match frame {
+                    Some(frame) => frame,
+                    None => {
+                        info!("Error receiving frame");
+                        continue;
+                    }
+                };
+
+                // TODO: stop hardcoding the mic sample rate
+                let encoded_frame = match encoder.encode(frame, 44100) {
+                    Ok(frame) => frame,
+                    Err(e) => {
+                        info!("Error encoding frame: {}", e);
+                        continue;
+                    }
+                };
+
+                let packet = Packet {
+                    packet_type: Some(PacketType::Audio(AudioPacket {
+                        index: 1,
+                        frame: encoded_frame,
+                    })),
+                };
+
+                let packet_bytes = match packet.to_bytes() {
+                    Ok(bytes) => bytes,
+                    Err(e) => {
+                        info!("Error serializing packet: {}", e);
+                        continue;
+                    }
+                };
+
+                connection.send_datagram(packet_bytes).unwrap();
             }
         }
     }
