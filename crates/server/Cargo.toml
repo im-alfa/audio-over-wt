@@ -9,3 +9,4 @@ wtransport.workspace = true
 tokio = { workspace = true, features = ["macros", "fs", "io-util", "rt-multi-thread"] }
 tracing-subscriber = { workspace = true, features = ["env-filter"] }
 anyhow = "1.0.100"
+protocol = { path = "../protocol" }
