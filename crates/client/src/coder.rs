@@ -47,11 +47,11 @@ impl Encoder for OpusEncoder {
     fn new(bitrate: i32) -> Result<Self, EncoderErrors> {
         let mut encoder =
             audiopus::coder::Encoder::new(SampleRate::Hz48000, Channels::Mono, Application::Voip)
-                .map_err(|e| EncoderErrors::InitializationError(e.to_string()))?;
+                .map_err(|e| EncoderErrors::Initialization(e.to_string()))?;
 
         encoder
             .set_bitrate(Bitrate::BitsPerSecond(bitrate))
-            .map_err(|e| EncoderErrors::BitrateError(e.to_string()))?;
+            .map_err(|e| EncoderErrors::Bitrate(e.to_string()))?;
 
         Ok(Self { encoder })
     }
@@ -72,7 +72,7 @@ impl Encoder for OpusEncoder {
                 output.resize(output.len() * 2, 0u8);
             }
             Err(e) => {
-                return Err(EncoderErrors::EncodingError(e.to_string()));
+                return Err(EncoderErrors::Encoding(e.to_string()));
             }
             _ => {}
         }
@@ -88,7 +88,7 @@ pub struct OpusDecoder {
 impl Decoder for OpusDecoder {
     fn new() -> Result<Self, DecoderErrors> {
         let decoder = audiopus::coder::Decoder::new(SampleRate::Hz48000, Channels::Mono)
-            .map_err(|e| DecoderErrors::InitializationError(e.to_string()))?;
+            .map_err(|e| DecoderErrors::Initialization(e.to_string()))?;
 
         Ok(Self { decoder })
     }
@@ -100,19 +100,19 @@ impl Decoder for OpusDecoder {
             .decoder
             .decode_float(
                 Some(Packet::try_from(data.as_slice()).map_err(|e| {
-                    DecoderErrors::PacketFormatError(format!("Error parsing frame: {e:?}"))
+                    DecoderErrors::PacketFormat(format!("Error parsing frame: {e:?}"))
                 })?),
                 MutSignals::try_from(output.as_mut_slice()).map_err(|e| {
-                    DecoderErrors::PacketFormatError(format!("Error parsing samples: {e:?}"))
+                    DecoderErrors::PacketFormat(format!("Error parsing samples: {e:?}"))
                 })?,
                 false, // FEC
             )
-            .map_err(|e| DecoderErrors::DecodingError(e.to_string()))?;
+            .map_err(|e| DecoderErrors::Decoding(e.to_string()))?;
 
         // Check if the frame size is correct.
         // 48 samples per frame * 20 ms per frame
         if actual_size != (48 * FRAME_SIZE_DURATION) as usize {
-            return Err(DecoderErrors::PacketFormatError(
+            return Err(DecoderErrors::PacketFormat(
                 "Invalid frame size".to_string(),
             ));
         }
