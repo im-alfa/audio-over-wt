@@ -1,0 +1,14 @@
+syntax = "proto3";
+
+package voip;
+
+message AudioPacket {
+    uint32 index = 1;
+    bytes frame = 2;
+}
+
+message Packet {
+    oneof packet_type {
+        AudioPacket audio = 1;
+    }
+}
